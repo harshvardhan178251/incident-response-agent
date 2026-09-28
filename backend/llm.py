@@ -10,6 +10,15 @@ import os
 LLM_MODEL = os.getenv("LLM_MODEL", "openai")
 LLM_URL = os.getenv("LLM_URL", "https://text.pollinations.ai/openai")
 LLM_TIMEOUT = float(os.getenv("LLM_TIMEOUT", "30"))
+# Provider chain: free + keyless. Primary = local Ollama (fast, private),
+# fallback = Pollinations keyless cloud, last resort = heuristic (no LLM call).
+LLM_PRIMARY = os.getenv("LLM_PRIMARY", "ollama").strip().lower()
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434").rstrip("/")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:8b")
+OLLAMA_TIMEOUT = float(os.getenv("OLLAMA_TIMEOUT", "60"))
+LAST_PROVIDER = "heuristic"  # updated on every successful LLM call (for /api/health)
+
+
 def _offline() -> bool:
     return os.getenv("LLM_OFFLINE", "").strip().lower() in ("1", "true", "yes", "on")
 
@@ -17,7 +26,44 @@ def _offline() -> bool:
 LLM_OFFLINE = _offline()
 
 
-async def _chat(prompt: str, temperature: float = 0.2, max_tokens: int = 400) -> str | None:
+def provider_label() -> str:
+    if LLM_OFFLINE:
+        return "heuristic"
+    if LAST_PROVIDER.startswith("ollama"):
+        return LAST_PROVIDER
+    if LAST_PROVIDER.startswith("pollinations"):
+        return LAST_PROVIDER
+    return f"{LLM_PRIMARY or 'ollama'} (pending)"
+
+
+async def _chat_ollama(prompt: str, temperature: float = 0.2, max_tokens: int = 400) -> str | None:
+    try:
+        import httpx
+
+        async with httpx.AsyncClient(timeout=OLLAMA_TIMEOUT) as client:
+            r = await client.post(f"{OLLAMA_URL}/api/chat", json={
+                "model": OLLAMA_MODEL,
+                "messages": [{"role": "user", "content": prompt}],
+                "stream": False,
+                "think": False,
+                # Small context: prompts are <1k tokens; the 40k default OOMs on CPU boxes.
+                "options": {"temperature": temperature, "num_predict": max_tokens,
+                            "num_ctx": 2048},
+            })
+            r.raise_for_status()
+            body = r.json()
+        text = ((body.get("message") or {}).get("content") or "").strip()
+        if text:
+            global LAST_PROVIDER
+            LAST_PROVIDER = f"ollama/{OLLAMA_MODEL}"
+            return text
+        return None
+    except Exception as e:
+        print(f"[llm] ollama unavailable: {e}")
+        return None
+
+
+async def _chat_pollinations(prompt: str, temperature: float = 0.2, max_tokens: int = 400) -> str | None:
     if LLM_OFFLINE:
         return None
     try:
@@ -33,10 +79,30 @@ async def _chat(prompt: str, temperature: float = 0.2, max_tokens: int = 400) ->
             r.raise_for_status()
             body = r.json()
         text = (body["choices"][0]["message"]["content"] or "").strip()
-        return text or None
+        if text:
+            global LAST_PROVIDER
+            LAST_PROVIDER = f"pollinations/{LLM_MODEL}"
+            return text
+        return None
     except Exception as e:
         print(f"[llm] free LLM unavailable: {e}")
         return None
+
+
+async def _chat(prompt: str, temperature: float = 0.2, max_tokens: int = 400) -> str | None:
+    """Provider chain: primary -> other cloud -> None (caller falls back to heuristic).
+    No retries: fail-open to the next provider for speed."""
+    if LLM_OFFLINE:
+        return None
+    order = ["ollama", "pollinations"] if LLM_PRIMARY == "ollama" else ["pollinations", "ollama"]
+    for provider in order:
+        if provider == "ollama":
+            out = await _chat_ollama(prompt, temperature, max_tokens)
+        else:
+            out = await _chat_pollinations(prompt, temperature, max_tokens)
+        if out:
+            return out
+    return None
 
 
 def heuristic_analysis(service: str, error_logs: str) -> dict:
@@ -63,11 +129,12 @@ def heuristic_analysis(service: str, error_logs: str) -> dict:
 
 async def analyze_incident(service: str, severity: str, error_logs: str) -> dict:
     """LLM analysis of the CURRENT incident logs. Returns root_cause + evidence."""
+    logs = (error_logs or "")[:1500]  # cap for speed; full logs still retained to memory
     prompt = (
         "You are an incident-response assistant. Given the service and error logs, "
         'return STRICT JSON: {"root_cause": string, "evidence": [string x3-5]}. '
         "Base the root cause ONLY on the logs below; derive evidence bullets from them.\n"
-        f"Service: {service}\nSeverity: {severity}\nError/logs:\n{error_logs}"
+        f"Service: {service}\nSeverity: {severity}\nError/logs:\n{logs}"
     )
     raw = await _chat(prompt, temperature=0.2, max_tokens=400)
     if not raw:
@@ -78,7 +145,7 @@ async def analyze_incident(service: str, severity: str, error_logs: str) -> dict
         return {
             "root_cause": data.get("root_cause", "Unknown"),
             "evidence": (data.get("evidence", []) or [])[:5],
-            "llm": f"pollinations/{LLM_MODEL}",
+            "llm": LAST_PROVIDER,
         }
     except Exception as e:
         print(f"[llm] parse failed, heuristic fallback: {e}")
@@ -256,7 +323,7 @@ async def build_recommendation(current: dict, memories: list[dict]) -> dict:
         parsed = {**base, **_heuristic_decision(current, memories)}
     raw = (f"Recommended: {parsed['recommended_action']}\nWhy: {'; '.join(parsed['why'])}\n"
            f"Historical failures: {'; '.join(parsed['historical_failures'])}")
-    return {"recommendation": raw, "structured": parsed, "llm": f"pollinations/{LLM_MODEL}"}
+    return {"recommendation": raw, "structured": parsed, "llm": LAST_PROVIDER}
 
 
 def _heuristic_decision(current: dict, memories: list[dict]) -> dict:

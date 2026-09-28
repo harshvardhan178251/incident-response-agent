@@ -8,7 +8,8 @@ runbooks worked — then proves the memory changed its answer.
 ## Stack
 - Frontend: React + Vite (`frontend/`)
 - Backend: Python + FastAPI (`backend/`)
-- LLM: Pollinations.ai free API (`openai` model, no key; heuristic fallback offline)
+- LLM: free + keyless chain — local Ollama (`qwen3:8b`) first, Pollinations.ai
+  cloud fallback, heuristic last resort. No keys anywhere.
 - Memory: Hindsight Cloud (`hindsight-client`, bank `agent`). Retain failures
   surface as errors — the app never fakes a save.
 

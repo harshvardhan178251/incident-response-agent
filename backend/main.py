@@ -101,7 +101,7 @@ async def health():
         "version": CODE_VERSION,
         "memory_backend": "hindsight" if reachable else "hindsight-unavailable",
         "bank_id": memory.BANK_ID,
-        "llm": "heuristic" if llm.LLM_OFFLINE else f"pollinations/{llm.LLM_MODEL}",
+        "llm": llm.provider_label(),
         "incidents_stored": len(store.list_all()),
     }
 

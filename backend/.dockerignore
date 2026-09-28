@@ -1,0 +1,6 @@
+__pycache__/
+*.py[c]
+incidents.json
+.hindsight_seeded
+.env
+tests/

@@ -304,7 +304,7 @@ async def polish_runbook(runbook: dict) -> str | None:
 
 def build_runbook(incident: dict, outcome: str) -> dict:
     """Template runbook from resolved incident fields (LLM polishes when available)."""
-    logs = [l.strip() for l in (incident.get("error_logs") or "").splitlines() if l.strip()][:5]
+    logs = [ln.strip() for ln in (incident.get("error_logs") or "").splitlines() if ln.strip()][:5]
     return {
         "problem": (incident.get("investigation") or {}).get("root_cause", "See incident"),
         "symptoms": logs or ["See error logs"],

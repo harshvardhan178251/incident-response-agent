@@ -9,6 +9,7 @@
 import asyncio
 import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
@@ -21,8 +22,6 @@ import llm  # noqa: E402
 import memory  # noqa: E402
 import store  # noqa: E402
 
-
-from pathlib import Path
 
 SEED_MARKER = Path(__file__).parent / ".hindsight_seeded"
 
@@ -188,7 +187,6 @@ async def investigate(incident_id: str):
     timeline = [{"incident_id": m.get("incident_id"), "outcome": m.get("outcome"),
                  "resolution": m.get("resolution"), "age": m.get("age"),
                  "rank": m.get("rank")} for m in memories[:5]]
-    causes = {m.get("incident_id"): None for m in memories}
     multi_cause = len({(m.get("service"), m.get("outcome")) for m in memories}) > 1
     breakdown = _confidence_breakdown(analysis, memories, succ, fail)
 

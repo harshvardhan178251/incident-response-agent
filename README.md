@@ -57,3 +57,11 @@ from the terminal (port auto-picks if 5173 is busy; proxy `/api` → `http://loc
 ## Env
 See `backend/.env.example`. `LLM_OFFLINE=1|true|yes` forces the heuristic.
 `HINDSIGHT_BANK_ID` selects the memory bank (default `agent`).
+
+## CI/CD
+- CI (`.github/workflows/ci.yml`): backend `ruff check` + offline `pytest`
+  (`backend/tests/`, Hindsight stubbed) on Python 3.14; frontend `npm ci` + `npm run build`.
+  Run locally: `cd backend && pip install -r requirements-dev.txt && ruff check . && pytest -q`.
+- CD (`.github/workflows/cd.yml`): on `main` push, builds + pushes
+  `ghcr.io/<repo>-backend` and `-frontend` images. `docker-compose.yml` runs both
+  (`backend/.env` supplies secrets, never committed).

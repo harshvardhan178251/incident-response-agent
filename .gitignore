@@ -1,6 +1,3 @@
-# secrets — never commit (see backend/.env.example for template)
-backend/.env
-
 # python
 __pycache__/
 *.py[cod]

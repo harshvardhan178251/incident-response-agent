@@ -10,18 +10,18 @@ Create → AI Investigation → Hindsight Recall → Recommendation → Engineer
 
 ## Run (2 terminals)
 ```bash
-# backend
+# backend (needs Python 3.14; run uvicorn via python -m)
 cd incident-agent/backend
 pip install -r requirements.txt
-copy ..\.env .env   # Windows (or cp ../.env .env)
-uvicorn main:app --reload --port 8010
+python -m uvicorn main:app --reload --port 8010
 
 # frontend
 cd incident-agent/frontend
 npm install
 npm run dev
 ```
-Open http://localhost:5175 (5173/5174 were taken by other projects on this machine; Vite auto-picked 5175)
+`backend/.env` ships with working defaults (free Pollinations LLM + Hindsight Cloud bank).
+Open http://localhost:5175 (Vite auto-picks the port; check the terminal output).
 
 ## Demo script (killer flow)
 1. Backend seeds INC-001 (pool increase → SUCCESS), INC-002 (restart → FAILED), INC-003 (pool increase → SUCCESS).
@@ -38,5 +38,6 @@ Open http://localhost:5175 (5173/5174 were taken by other projects on this machi
 - `POST /api/resolve` — `{service, severity, error_logs, root_cause, resolution, outcome}` → retained to Hindsight
 
 ## Env
-See `.env`. The free Pollinations.ai LLM needs no key (set `LLM_OFFLINE=1` to force heuristic).
-Without `HINDSIGHT_BASE_URL` it uses `backend/memory_store.json` with the same retain/recall interface — set the URL + key to use real Hindsight Cloud.
+Config lives in code in `backend/.env` (committed): free Pollinations.ai LLM needs no key
+(set `LLM_OFFLINE=1` to force heuristic). Without `HINDSIGHT_BASE_URL` the app falls back
+to `backend/memory_store.json` with the same retain/recall interface. No keys in this README.

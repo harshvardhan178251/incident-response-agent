@@ -1,3 +1,11 @@
+# env (never commit live keys)
+backend/.env
+.env
+
+# runtime state
+backend/incidents.json
+backend/.hindsight_seeded
+
 # python
 __pycache__/
 *.py[cod]

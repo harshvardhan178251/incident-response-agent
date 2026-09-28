@@ -33,11 +33,11 @@
     "id": "INC-004",
     "service": "Payment API",
     "severity": "High",
-    "error_logs": "HTTP 503 errors\nDB connection timeout\nconnection pool exhausted",
-    "root_cause": "Database connection pool exhaustion",
-    "resolution": "Increased pool from 50 \u2192 100",
+    "error_logs": "HTTP 503 errors\nRedis timeout\nconnection pool exhausted",
+    "root_cause": "Redis connection pool exhaustion",
+    "resolution": "Increased DB pool 50 → 100 (wrong layer, Redis was saturated)",
     "outcome": "FAILED",
     "resolved_at": "2026-09-28T18:00:58.380905Z",
-    "content": "Incident INC-004 | Service: Payment API | Severity: High | Error: HTTP 503 errors\nDB connection timeout\nconnection pool exhausted | Root cause: Database connection pool exhaustion | Resolution: Increased pool from 50 \u2192 100 | Outcome: FAILED"
+    "content": "Incident INC-004 | Service: Payment API | Severity: High | Error: HTTP 503 errors\nRedis timeout\nconnection pool exhausted | Root cause: Redis connection pool exhaustion | Resolution: Increased DB pool 50 → 100 (wrong layer, Redis was saturated) | Outcome: FAILED"
   }
 ]

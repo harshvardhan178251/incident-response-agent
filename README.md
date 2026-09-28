@@ -1,43 +1,59 @@
-# Incident Response Agent — 1-hour prototype
+# Incident Response Agent
 
 Create → AI Investigation → Hindsight Recall → Recommendation → Engineer Resolves → Hindsight Retain.
+
+The agent remembers past incidents, root causes, resolution steps, and which
+runbooks worked — then proves the memory changed its answer.
 
 ## Stack
 - Frontend: React + Vite (`frontend/`)
 - Backend: Python + FastAPI (`backend/`)
 - LLM: Pollinations.ai free API (`openai` model, no key; heuristic fallback offline)
-- Memory: Hindsight (`hindsight-client`, local JSON fallback so the demo never breaks)
+- Memory: Hindsight Cloud (`hindsight-client`, bank `agent`). Retain failures
+  surface as errors — the app never fakes a save.
 
 ## Run (2 terminals)
-```bash
-# backend (needs Python 3.14; run uvicorn via python -m)
+```powershell
+# backend (needs Python 3.14) — safe start kills stale :8010 holders,
+# starts fresh, and verifies the running version matches disk code
 cd incident-agent/backend
 pip install -r requirements.txt
-python -m uvicorn main:app --reload --port 8010
+powershell -ExecutionPolicy Bypass -File start-backend.ps1
 
 # frontend
 cd incident-agent/frontend
 npm install
 npm run dev
 ```
-`backend/.env` ships with working defaults (free Pollinations LLM + Hindsight Cloud bank).
-Open http://localhost:5175 (Vite auto-picks the port; check the terminal output).
+Copy `backend/.env.example` to `backend/.env` and fill in `HINDSIGHT_API_KEY`
+(never commit the live key; `backend/.env` is git-ignored). Open the Vite URL
+from the terminal (port auto-picks if 5173 is busy; proxy `/api` → `http://localhost:8010`).
 
-## Demo script (killer flow)
-1. Backend seeds INC-001 (pool increase → SUCCESS), INC-002 (restart → FAILED), INC-003 (pool increase → SUCCESS).
-2. Enter: **Payment API / Critical** / `HTTP 503 / DB connection timeout / connection pool exhausted` → **Investigate**.
-3. Expect: root cause = pool exhaustion, INC-001 recalled as similar-success, INC-002 as similar-failure, recommendation = increase pool.
-4. Click **Resolve & Remember** (fix `Increased pool from 50 → 100`, SUCCESS) → saved to Hindsight as INC-004.
-5. Say: "The next time this happens, the agent will recall this incident too." Re-investigate to prove it.
+## Demo script (learning loop)
+1. Create incident: **Payment API / Critical** / `HTTP 503 / Redis timeout / connection pool exhausted` → **Investigate**.
+2. Expect: fingerprint (Redis / Connection exhaustion), root cause + evidence from
+   those logs, Hindsight-ranked memories with real retrieval scores, structured
+   recommendation (action / why / historical failures / confidence breakdown),
+   timeline + memory-impact panels.
+3. Enter actual fix + SUCCESS → **Resolve & Remember** → “Memory Updated … stored
+   in Hindsight” (+ auto-generated runbook retained).
+4. **Create another similar incident** with the same symptoms → Investigate → the
+   just-resolved incident appears in recall with Service/Resolution/Outcome, and
+   the recommendation cites it (`resembles INC-xxx`).
 
 ## API
-- `GET /api/health` — backend/mode check
-- `GET /api/incidents` — what's in memory
-- `POST /api/seed` — reset the 3 demo incidents
-- `POST /api/investigate` — `{service, severity, error_logs}` → root cause + evidence + similar + recommendation
-- `POST /api/resolve` — `{service, severity, error_logs, root_cause, resolution, outcome}` → retained to Hindsight
+- `GET /api/health` — status + `version` + memory/llm state
+  (`hindsight` vs `hindsight-unavailable`)
+- `GET /api/version` — running code version (stale-server guard)
+- `POST /api/incidents` — `{service, severity, error_logs}` → `{id, ...}`
+- `GET /api/incidents/{id}` — incident state
+- `POST /api/incidents/{id}/investigate` — LLM analysis + fingerprint +
+  Hindsight recall (short keyword query + minimal-query fallback) + structured
+  recommendation (decision, counterfactual) + confidence breakdown + timeline +
+  memory impact + runbooks
+- `POST /api/incidents/{id}/resolve` — `{resolution, outcome}` → retained to
+  Hindsight (502 if unavailable) + auto-runbook retained on SUCCESS
 
 ## Env
-Config lives in code in `backend/.env` (committed): free Pollinations.ai LLM needs no key
-(set `LLM_OFFLINE=1` to force heuristic). Without `HINDSIGHT_BASE_URL` the app falls back
-to `backend/memory_store.json` with the same retain/recall interface. No keys in this README.
+See `backend/.env.example`. `LLM_OFFLINE=1|true|yes` forces the heuristic.
+`HINDSIGHT_BANK_ID` selects the memory bank (default `agent`).

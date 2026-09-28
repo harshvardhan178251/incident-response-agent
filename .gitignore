@@ -1,0 +1,16 @@
+# secrets — never commit (see backend/.env.example for template)
+backend/.env
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# node
+frontend/node_modules/
+frontend/dist/
+
+# os
+.DS_Store
+Thumbs.db

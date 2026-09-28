@@ -1,0 +1,43 @@
+[
+  {
+    "id": "INC-001",
+    "service": "Payment API",
+    "severity": "Critical",
+    "error_logs": "HTTP 503 errors, DB connection timeout, connection pool exhausted",
+    "root_cause": "Database connection pool exhaustion",
+    "resolution": "Increase pool 50 \u2192 100",
+    "outcome": "SUCCESS",
+    "content": "Incident INC-001 | Service: Payment API | Severity: Critical | Error: HTTP 503 errors, DB connection timeout, connection pool exhausted | Root cause: Database connection pool exhaustion | Resolution: Increase pool 50 \u2192 100 | Outcome: SUCCESS"
+  },
+  {
+    "id": "INC-002",
+    "service": "Payment API",
+    "severity": "Critical",
+    "error_logs": "HTTP 503 errors, DB connection timeout, connection pool exhausted",
+    "root_cause": "Database connection pool exhaustion",
+    "resolution": "Restart service",
+    "outcome": "FAILED",
+    "content": "Incident INC-002 | Service: Payment API | Severity: Critical | Error: HTTP 503 errors, DB connection timeout, connection pool exhausted | Root cause: Database connection pool exhaustion | Resolution: Restart service | Outcome: FAILED"
+  },
+  {
+    "id": "INC-003",
+    "service": "Checkout API",
+    "severity": "High",
+    "error_logs": "HTTP 503 errors, DB connection timeout, connection pool exhausted",
+    "root_cause": "Database connection pool exhaustion",
+    "resolution": "Increase pool 50 \u2192 100",
+    "outcome": "SUCCESS",
+    "content": "Incident INC-003 | Service: Checkout API | Severity: High | Error: HTTP 503 errors, DB connection timeout, connection pool exhausted | Root cause: Database connection pool exhaustion | Resolution: Increase pool 50 \u2192 100 | Outcome: SUCCESS"
+  },
+  {
+    "id": "INC-004",
+    "service": "Payment API",
+    "severity": "High",
+    "error_logs": "HTTP 503 errors\nDB connection timeout\nconnection pool exhausted",
+    "root_cause": "Database connection pool exhaustion",
+    "resolution": "Increased pool from 50 \u2192 100",
+    "outcome": "FAILED",
+    "resolved_at": "2026-09-28T18:00:58.380905Z",
+    "content": "Incident INC-004 | Service: Payment API | Severity: High | Error: HTTP 503 errors\nDB connection timeout\nconnection pool exhausted | Root cause: Database connection pool exhaustion | Resolution: Increased pool from 50 \u2192 100 | Outcome: FAILED"
+  }
+]

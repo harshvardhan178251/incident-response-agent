@@ -14,7 +14,7 @@ LLM_TIMEOUT = float(os.getenv("LLM_TIMEOUT", "30"))
 # fallback = Pollinations keyless cloud, last resort = heuristic (no LLM call).
 LLM_PRIMARY = os.getenv("LLM_PRIMARY", "ollama").strip().lower()
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434").rstrip("/")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:8b")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:3b")
 OLLAMA_TIMEOUT = float(os.getenv("OLLAMA_TIMEOUT", "60"))
 LAST_PROVIDER = "heuristic"  # updated on every successful LLM call (for /api/health)
 
